@@ -48,7 +48,7 @@ function Install-OktaVerify {
     # Function to read parameter values from the config.json file
     function Get-ConfigParams {
         param (
-            [Parameter(Mandatory = $true)]
+            [Parameter]
             [string]$Path
         )
 
@@ -67,7 +67,7 @@ function Install-OktaVerify {
     }
 
     # Check if config.json is present and read parameter values from it
-    $configParams = Get-ConfigParams -Path ".\config.json"
+    $configParams = Get-ConfigParams -Path (Join-Path $PSScriptRoot "config.json")
 
     if ($configParams) {
         # Use config.json parameters if available
@@ -109,6 +109,22 @@ function Install-OktaVerify {
 function Get-OktaVerifyPath {
     [CmdletBinding()]
     param ()
+
+    # Define the config.json file path
+    $configFilePath = Join-Path $PSScriptRoot "config.json"
+
+    if (Test-Path $configFilePath) {
+        # Read config.json and check if OktaVerifyPath is defined
+        $configContent = Get-Content $configFilePath -Raw | ConvertFrom-Json
+        $oktaVerifyPathOverride = $configContent.OktaVerifyPath
+
+        if ($oktaVerifyPathOverride -and (Test-Path $oktaVerifyPathOverride -PathType Leaf)) {
+            # If OktaVerifyPath is defined and exists, use it directly
+            return $oktaVerifyPathOverride
+        } else {
+            Write-Host "Invalid OktaVerifyPath specified in the config.json file. Falling back to manual selection." -ForegroundColor Yellow
+        }
+    }
 
     # Add type for the System.Windows.Forms assembly
     Add-Type -AssemblyName System.Windows.Forms

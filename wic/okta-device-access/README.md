@@ -25,7 +25,8 @@ This will prompt you for the file location of the Okta Verify executable (a file
     "SKU": "ALL",
     "OrgName": "ExampleOrg",
     "ClientID": "YourClientID",
-    "ClientSecret": "YourClientSecret"
+    "ClientSecret": "YourClientSecret",
+    "OktaVerifyPath": "C:\\Path\\To\\OktaVerify.exe"
 }
 ```
 
