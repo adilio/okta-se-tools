@@ -105,22 +105,7 @@ function Install-OktaVerify {
     }
 }
 
-<#
-.SYNOPSIS
-    Displays an OpenFileDialog to prompt the user to browse and select the Okta Verify executable.
-
-.DESCRIPTION
-    This advanced function displays an OpenFileDialog window to prompt the user to browse and select the location of the Okta Verify executable (.exe file).
-
-.INPUTS
-    None. You interactively select the file using the OpenFileDialog.
-
-.OUTPUTS
-    System.String. Returns the full file path of the selected Okta Verify executable.
-
-.EXAMPLE
-    Get-OktaVerifyPath
-#>
+# Displays an OpenFileDialog to prompt the user to browse and select the Okta Verify executable.
 function Get-OktaVerifyPath {
     [CmdletBinding()]
     param ()
@@ -146,6 +131,7 @@ function Get-OktaVerifyPath {
     }
 }
 
+# Sets relevant registry key values for Okta Device Access 
 function Set-OktaDeviceAccessRegistry {
     # Define the registry path
     $registryPath = "HKLM:\SOFTWARE\Policies\Okta\Okta Device Access"
