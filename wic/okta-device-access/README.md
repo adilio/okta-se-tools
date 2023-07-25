@@ -6,7 +6,8 @@ The `Install-OktaVerify.ps1` script installs the Okta Verify executable on Windo
 - SKU
 - OrgName
 - ClientID
-- ClientSecret.
+- ClientSecret
+- OktaVerifyPath
 
 You can use this script multiple ways.
 
@@ -30,7 +31,7 @@ This will prompt you for the file location of the Okta Verify executable (a file
 }
 ```
 
-Now, when you run `.\Install-OktaVerify.ps1`, it will use the values from the `config.json` file, and only prompt for the location of the Okta Verify executable.
+Now, when you run `.\Install-OktaVerify.ps1`, it will use the values from the `config.json` file.
 
 1. You can also run the script and pass all the parameters as arguments:
 
