@@ -9,6 +9,16 @@ The `Install-OktaVerify.ps1` script installs the Okta Verify executable on Windo
 - ClientSecret
 - OktaVerifyPath
 
+## Downloading
+
+You can download the Okta Verify executable from your Okta Admin dashboard Under `Settings` > `Downloads` (from the left sidebar). You can then download this script locally using this one-liner in a PowerShell Admin console:
+
+```powershell
+Invoke-RestMethod https://tinyurl.com/ov-install -OutFile Install-OktaVerify.ps1
+```
+
+## Running
+
 You can use this script multiple ways.
 
 1. You can just run the script:
@@ -19,7 +29,7 @@ You can use this script multiple ways.
 
 This will prompt you for the file location of the Okta Verify executable (a file explorer window will open), and prompt you for the `OrgName`, `ClientID`, and `ClientSecret` values inline in the terminal.
 
-1. You can alternatively rename the `config.json.example` to `config.json`, and populate the values of the parameters:
+2. You can alternatively rename the `config.json.example` to `config.json`, and populate the values of the parameters:
 
 ```json
 {
