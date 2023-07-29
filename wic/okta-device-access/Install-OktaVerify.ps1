@@ -4,51 +4,28 @@
 
 .DESCRIPTION
     This function installs the Okta Verify executable on Windows by specifying the SKU, OrgName, ClientID, and ClientSecret.
-    Additionally, it prompts the user to browse and select the location of the Okta Verify executable.
+    It expects these values to be set in a config.json file in the present script directory.
 
 .PARAMETER SKU
     The SKU of the Okta Verify executable. Default value is "ALL".
 
-.PARAMETER OrgName
-    The organization name associated with Okta in the format "orgname" or "orgname.okta.com".
-
-.PARAMETER ClientID
-    The client ID for accessing Okta APIs.
-
-.PARAMETER ClientSecret
-    The client secret for accessing Okta APIs as a secure string.
-
-.EXAMPLE
-    Install-OktaVerify -SKU "ALL" -OrgName "ExampleOrg" -ClientID "YourClientID" -ClientSecret (ConvertTo-SecureString -String "YourClientSecret" -AsPlainText -Force)
-
-.EXAMPLE
-    Install-OktaVerify -OrgName "ExampleOrg.okta.com" -ClientID "YourClientID" -ClientSecret (Read-Host "Enter your Client Secret" -AsSecureString)
-
 .NOTES
     Author: @adilio
     Date: July 20, 2023
-    Version: 1.0
+    Version: 0.2
 #>
+
 function Install-OktaVerify {
     [CmdletBinding()]
-    param(
+    param (
         [Parameter(Mandatory = $false)]
-        [string]$SKU = "ALL",
-
-        [Parameter(Mandatory = $false)]
-        [string]$OrgName,
-
-        [Parameter(Mandatory = $false)]
-        [string]$ClientID,
-
-        [Parameter(Mandatory = $false)]
-        [securestring]$ClientSecret
+        [string]$SKU = "ALL"
     )
 
     # Function to read parameter values from the config.json file
     function Get-ConfigParams {
         param (
-            [Parameter]
+            [Parameter(Mandatory = $true)]
             [string]$Path
         )
 
@@ -59,7 +36,7 @@ function Install-OktaVerify {
                 SKU = $configContent.SKU
                 OrgName = $configContent.OrgName
                 ClientID = $configContent.ClientID
-                ClientSecret = $configContent.ClientSecret | ConvertTo-SecureString
+                ClientSecret = $configContent.ClientSecret
             }
         } else {
             return $null
@@ -67,7 +44,8 @@ function Install-OktaVerify {
     }
 
     # Check if config.json is present and read parameter values from it
-    $configParams = Get-ConfigParams -Path (Join-Path $PSScriptRoot "config.json")
+    $configFilePath = Join-Path $PSScriptRoot "config.json"
+    $configParams = Get-ConfigParams -Path $configFilePath
 
     if ($configParams) {
         # Use config.json parameters if available
@@ -75,9 +53,28 @@ function Install-OktaVerify {
         $OrgName = $configParams.OrgName
         $ClientID = $configParams.ClientID
         $ClientSecret = $configParams.ClientSecret
+    } else {
+        Write-Host "Config file not found or invalid. Make sure the config.json file exists and is properly formatted." -ForegroundColor Yellow
+
+        # Prompt the user for OrgName, ClientID, and ClientSecret if not defined in config.json
+        $OrgName = Read-Host "Enter your Okta OrgName (e.g., 'orgname' or 'orgname.okta.com')"
+        $ClientID = Read-Host "Enter your Client ID"
+        $ClientSecret = Read-Host "Enter your Client Secret"
+
+        # Create a new config object and save it to config.json
+        $newConfig = @{
+            SKU = $SKU
+            OrgName = $OrgName
+            ClientID = $ClientID
+            ClientSecret = $ClientSecret
+        } | ConvertTo-Json -Depth 4
+
+        $newConfig | Out-File -FilePath $configFilePath -Encoding UTF8
+
+        Write-Host "Config.json created with provided parameters." -ForegroundColor Green
     }
 
-    # Prompt for OrgName, ClientID, and ClientSecret if not provided as parameters
+    # Check if any of the parameters are empty and prompt the user to enter them
     if (-not $OrgName) {
         $OrgName = Read-Host "Enter your Okta OrgName (e.g., 'orgname' or 'orgname.okta.com')"
     }
@@ -87,10 +84,8 @@ function Install-OktaVerify {
     }
 
     if (-not $ClientSecret) {
-        $ClientSecret = Read-Host "Enter your Client Secret" -AsSecureString
+        $ClientSecret = Read-Host "Enter your Client Secret"
     }
-    
-    $plainTextClientSecret = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ClientSecret))
 
     # Check if the OrgName is in the "orgname" or "orgname.okta.com" format
     $baseUrl = $OrgName
@@ -98,11 +93,20 @@ function Install-OktaVerify {
         $baseUrl = "$OrgName.okta.com"
     }
 
-    if ($oktaVerifyPath) {
-        # Installation logic here, using the provided parameters and the $oktaVerifyPath variable
-        Invoke-Expression -Command "$oktaVerifyPath /q SKU=$SKU ORGURL=$baseUrl CLIENTID=$ClientID CLIENTSECRET=$plainTextClientSecret"
-        Write-Host "Okta Verify silent install initiated successfully." -ForegroundColor Green
+    # Prompt for the location of the Okta Verify executable using OpenFileDialog
+    $oktaVerifyPath = Get-OktaVerifyPath
+
+    if (-not (Test-Path $oktaVerifyPath)) {
+        Write-Host "Invalid OktaVerifyPath specified. The specified path does not exist." -ForegroundColor Yellow
+        return
     }
+
+    # Installation logic here, using the provided parameters and the $oktaVerifyPath variable
+    Invoke-Expression -Command "$oktaVerifyPath /q SKU=$SKU ORGURL=$baseUrl CLIENTID=$ClientID CLIENTSECRET=$ClientSecret"
+    Write-Host "Okta Verify silent install initiated." -ForegroundColor Green
+
+    # Set registry keys for Okta Device Access (Desktop MFA)
+    Set-OktaDeviceAccessRegistry
 }
 
 # Displays an OpenFileDialog to prompt the user to browse and select the Okta Verify executable.
@@ -162,16 +166,8 @@ function Set-OktaDeviceAccessRegistry {
     Set-ItemProperty -Path $registryPath -Name "MaxLoginsWithOfflineFactor" -Value 50
     Set-ItemProperty -Path $registryPath -Name "MFAGracePeriodInMinutes" -Value 60
 
-    Write-Host "Okta Verify Desktop MFA registry keys successfully." -ForegroundColor Green
-    # Output the updated registry values
-    Get-ItemProperty -Path $registryPath
+    Write-Host "Okta Verify Desktop MFA registry keys set." -ForegroundColor Green
 }
-
-# Prompt for the location of the Okta Verify executable using OpenFileDialog
-$oktaVerifyPath = Get-OktaVerifyPath
 
 # Install Okta Verify silently
 Install-OktaVerify
-
-# Set registry keys for Okta Device Access (Desktop MFA)
-Set-OktaDeviceAccessRegistry
