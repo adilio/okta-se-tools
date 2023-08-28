@@ -12,14 +12,16 @@
 .NOTES
     Author: @adilio
     Date: July 20, 2023
-    Version: 0.2
+    Version: 0.3
 #>
 
 function Install-OktaVerify {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false)]
-        [string]$SKU = "ALL"
+        [string]$SKU = "ALL",
+        [Parameter(Mandatory = $false)]
+        [string]$CustomDomain
     )
 
     # Function to read parameter values from the config.json file
@@ -33,12 +35,13 @@ function Install-OktaVerify {
             $configContent = Get-Content $Path -Raw | ConvertFrom-Json
 
             return @{
-                SKU = $configContent.SKU
-                OrgName = $configContent.OrgName
-                ClientID = $configContent.ClientID
+                SKU          = $configContent.SKU
+                OrgName      = $configContent.OrgName
+                ClientID     = $configContent.ClientID
                 ClientSecret = $configContent.ClientSecret
             }
-        } else {
+        }
+        else {
             return $null
         }
     }
@@ -53,7 +56,8 @@ function Install-OktaVerify {
         $OrgName = $configParams.OrgName
         $ClientID = $configParams.ClientID
         $ClientSecret = $configParams.ClientSecret
-    } else {
+    }
+    else {
         Write-Host "Config file not found or invalid. Make sure the config.json file exists and is properly formatted." -ForegroundColor Yellow
 
         # Prompt the user for OrgName, ClientID, and ClientSecret if not defined in config.json
@@ -63,9 +67,9 @@ function Install-OktaVerify {
 
         # Create a new config object and save it to config.json
         $newConfig = @{
-            SKU = $SKU
-            OrgName = $OrgName
-            ClientID = $ClientID
+            SKU          = $SKU
+            OrgName      = $OrgName
+            ClientID     = $ClientID
             ClientSecret = $ClientSecret
         } | ConvertTo-Json -Depth 4
 
@@ -87,9 +91,16 @@ function Install-OktaVerify {
         $ClientSecret = Read-Host "Enter your Client Secret"
     }
 
-    # Check if the OrgName is in the "orgname" or "orgname.okta.com" format
+    # Check if the OrgName is in the "orgname", "orgname.oktapreview.com", or "orgname.okta.com" format
     $baseUrl = $OrgName
-    if ($OrgName -notlike "*.okta.com") {
+    if (-not $CustomDomain -and ($OrgName -notlike "*.okta.com" -and $OrgName -notlike "*.oktapreview.com")) {
+        Write-Host "Invalid OrgName format. The format should be 'orgname' or 'orgname.okta.com' or 'orgname.oktapreview.com'." -ForegroundColor Yellow
+        return
+    }
+    if ($CustomDomain) {
+        $baseUrl = $OrgName
+    }
+    else {
         $baseUrl = "$OrgName.okta.com"
     }
 
@@ -125,7 +136,8 @@ function Get-OktaVerifyPath {
         if ($oktaVerifyPathOverride -and (Test-Path $oktaVerifyPathOverride -PathType Leaf)) {
             # If OktaVerifyPath is defined and exists, use it directly
             return $oktaVerifyPathOverride
-        } else {
+        }
+        else {
             Write-Host "Invalid OktaVerifyPath specified in the config.json file. Falling back to manual selection." -ForegroundColor Yellow
         }
     }
@@ -144,7 +156,8 @@ function Get-OktaVerifyPath {
     if ($openFileDialog.ShowDialog() -eq 'OK') {
         # Return the full file path of the selected executable
         return $openFileDialog.FileName
-    } else {
+    }
+    else {
         # If the user cancels the OpenFileDialog, display a message and return $null
         Write-Host "Okta Verify installation cancelled." -ForegroundColor Yellow
         return $null
@@ -171,3 +184,6 @@ function Set-OktaDeviceAccessRegistry {
 
 # Install Okta Verify silently
 Install-OktaVerify
+
+# Comment the above line, and uncomment below, if you are using a custom domain
+#Install-OktaVerify -CustomDomain
