@@ -286,15 +286,15 @@ if ($groupsUsers) {
 			$baseAttributeNames = @()
 			if ($prop = $jsonObj2.definitions.PSObject.Properties.Item('base')) {
 				$baseAttributeNames = $jsonObj2.definitions.base.properties.psobject.Properties.Name
-				# Got the Okta labels, now get the AD names from the title property			
+				# Got the Okta labels, now get the AD names from the externalName property			
 				foreach ($nameKey in $baseAttributeNames) {
 					# Ignore any SYSTEM scoped properties - these are managed by the Okta integration 
 					if ($jsonObj2.definitions.base.properties.($nameKey).scope -ne "SYSTEM") {
-						$allADAttrNames+= $jsonObj2.definitions.base.properties.($nameKey).title
+						$allADAttrNames+= $jsonObj2.definitions.base.properties.($nameKey).externalName
 					}
 					else {
-						$title = $jsonObj2.definitions.base.properties.($nameKey).title
-						Write-Debug "Not including SYSTEM scoped property $title"
+						$externalName = $jsonObj2.definitions.base.properties.($nameKey).externalName
+						Write-Debug "Not including SYSTEM scoped property $externalName"
 					}
 				}
 			}
@@ -306,9 +306,9 @@ if ($groupsUsers) {
 			# Get all the custom attributes - first the Okta labels, then find the AD Names
 			if ($prop = $jsonObj2.definitions.PSObject.Properties.Item('custom')) {
 				$customAttributeNames = $jsonObj2.definitions.custom.properties.psobject.Properties.Name
-				# Got the Okta labels, now get the AD names from the title property
+				# Got the Okta labels, now get the AD names from the externalName property
 				foreach ($nameKey in $customAttributeNames) {
-					$allADAttrNames+= $jsonObj2.definitions.custom.properties.($nameKey).title
+					$allADAttrNames+= $jsonObj2.definitions.custom.properties.($nameKey).externalName
 				}
 			}
 			$outarr = $baseAttributeNames -join ','
